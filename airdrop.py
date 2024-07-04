@@ -380,7 +380,10 @@ def averageTokenInALM(
 
     liquid_box_manager = contracts['liquid_box_manager']
     df_mgr = []
-    event_dp = get_events(liquid_box_manager.events.Deposit, blk_after_from, blk_before_to, extra_args=['transactionIndex', 'logIndex'], blacklist_args={'amount0':None, 'amount1':None})
+    event_dp = get_events(
+        liquid_box_manager.events.Deposit, blk_after_from, blk_before_to,
+        extra_args=['transactionIndex', 'logIndex'], blacklist_args={'amount0':None, 'amount1':None}
+    )
     if len(event_dp['block']) > 0:
         df_dp = pd.DataFrame(event_dp)
         df_dp["shares"] = df_dp["shares"].astype('float')
@@ -1095,22 +1098,6 @@ def averageMoreDebt3(
         df_sxfer['assets'] = 0
         df_sxfer['col_addr'] = ""
         df_more.append(df_sxfer)
-    smore_depo_events = get_events(contracts['smore'].events.Deposit, blk_after_from, blk_before_to, extra_args=['transactionIndex', 'logIndex'], blacklist_args={'sender':None})
-    if len(smore_depo_events['block']) > 0:
-        df_sdp = pd.DataFrame(smore_depo_events)
-        df_sdp.rename(columns={'owner':'to'}, inplace=True)
-        df_sdp['from'] = 'smore'
-        df_sdp['shares'] = df_sdp['shares'].astype(float)
-        df_sdp['col_addr'] = ""
-        df_more.append(df_sdp)
-    smore_wd_events = get_events(contracts['smore'].events.Withdraw, blk_after_from, blk_before_to, extra_args=['transactionIndex', 'logIndex'], blacklist_args={'sender':None, 'receiver':None})
-    if len(smore_wd_events['block']) > 0:
-        df_swd = pd.DataFrame(smore_wd_events)
-        df_swd['shares'] = -df_swd['shares'].astype(float)
-        df_swd.rename(columns={'owner':'to'}, inplace=True)
-        df_swd['from'] = 'smore'
-        df_swd['col_addr'] = ""
-        df_more.append(df_swd)
 
     vault_created_events = get_events(contracts['vault_factory'].events.VaultCreated, 1, blk_before_to)
     stack_vaults = {vault_created_events['vault'][i]: vault_created_events['collateralToken'][i] for i in range(len(vault_created_events['block']))}
@@ -1213,13 +1200,6 @@ def averageMoreDebt3(
                 more_balances[row['to']].last_blk = row.block
                 if more_balances[row['to']].more_bal[row['col_addr']] < 0:
                     more_balances[row['to']].more_bal[row['col_addr']] = 0
-            elif row['from'] == 'smore':
-                if row['to'] not in more_balances:
-                    more_balances[row['to']] = MoreBalances()
-                more_balances[row['to']].smore_shr += row['shares']
-                more_balances[row['to']].last_blk = row.block
-                if more_balances[row['to']].smore_shr < 0:
-                    more_balances[row['to']].smore_shr = 0
             else:
                 if row['assets'] != 0:
                     if row['to'] == contracts['smore'].address:
@@ -1269,9 +1249,7 @@ def averageMoreDebt3(
     for addr, mbal in more_balances.items():
         more_to_add, collat_to_add, smore_to_add, brw_to_add = mbal.update_to_blk(to_blk=blk_before_to, df_price_more=df_price_more, df_token_price_by_blk=df_token_price_by_blk, total_time=total_time)
         weighted_more[addr] += more_to_add
-        weighted_more[addr] = int(mbal.more_bal[''] * df_price_more.iloc[-1].px * time_weights)
         weighted_smore[addr] += smore_to_add
-        weighted_smore[addr] = int(MoreBalances.assets_per_share() * mbal.smore_shr * df_price_more.iloc[-1].px * time_weights) if mbal.smore_shr > 0 else 0
         for col_addr, col_bal in mbal.collat_bal_dict.items():
             if col_addr not in weighted_collat:
                 weighted_collat[col_addr] = defaultdict(int)
