@@ -3,6 +3,8 @@ example:
     python airdrop.py 2024-05-16 2024-06-25
 ```
 
+Use airdrop_v2 after 2024-07-04
+
 Daily reports saved in ./daily_reports/rwa/daily_summary_{date}.csv
 
 Tracking Tokens:
