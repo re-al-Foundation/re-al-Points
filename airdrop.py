@@ -23,7 +23,6 @@ REAL_RPC_ENDPOINT = 'https://real.drpc.org'
 W3 = Web3(Web3.HTTPProvider(REAL_RPC_ENDPOINT, request_kwargs={'timeout': 10}))
 
 NULL_ADDR = '0x0000000000000000000000000000000000000000'
-DEFAULT_MULTILIER = 2
 LEVERAGE_MULTIPLIER = {
     contracts['ukre'].address: 5,
     contracts['arcusd'].address: 4,
@@ -39,9 +38,9 @@ Block_Time_Cache = {}
 TOKEN_BY_SEASON = {
     0: [66_600, 46, dt.date(2024, 5, 16), dt.date(2024, 6, 30)],
     1: [1_265_400, 62, dt.date(2024, 7, 1), dt.date(2024, 8, 31)],
-    # 2: [999_000, 61, dt.date(2024, 9, 1), dt.date(2024, 10, 31)],
-    # 3: [666_000, 61, dt.date(2024, 11, 1), dt.date(2024, 12, 31)],
-    # 4: [333_000, 59, dt.date(2025, 1, 1), dt.date(2025, 2, 28)],
+    2: [999_000, 61, dt.date(2024, 9, 1), dt.date(2024, 10, 31)],
+    3: [666_000, 61, dt.date(2024, 11, 1), dt.date(2024, 12, 31)],
+    4: [333_000, 59, dt.date(2025, 1, 1), dt.date(2025, 2, 28)],
 }
 
 ###############################################################################
@@ -1294,6 +1293,7 @@ def get_daily_snapshot_for_reeth(points_owner_addresses, snap_ts, df_eth_price):
     return wtd_reeth_value
 
 def get_refering():
+    i = 1
     while True:
         try:
             res = requests.get('https://api.tangible.store/points/wallets').json()
@@ -1309,12 +1309,12 @@ def get_refering():
                 if user_info['usedWalletAddress'] != '':
                     ref_res[user_info['walletAddress']] = user_info['usedWalletAddress']
             ref_res = {user_info['walletAddress']:user_info['usedWalletAddress'] for user_info in res['dataWallets'] if user_info['usedWalletAddress'] != ''}
-            print(ref_res)
             return ref_res
         except Exception as e:
             print(e)
-            print('retrying')
-        time.sleep(10)
+            print(f'retrying in {10*i} seconds')
+        time.sleep(10*i)
+        i += 1
 
 def refering_points(pts, ref):
     # ref = get_refering()
@@ -1469,7 +1469,6 @@ def day_by_day_summary(root_path='./', start_date=None, end_date=None):
             from_ts, to_ts, blk_after_from, blk_before_to, blk_ts_after_from, blk_ts_before_to,
             df_swap_by_address, df_token_price_by_blk, pool_ranges_by_address=pearl_pools, tokens_to_track=None, gauge_by_address=gauges_by_pool
         )
-        # print(twab_in_nft_by_pool)
 
         for token_addr, twab_in_nfts in twab_in_nft_by_token.items():
             if token_addr not in address_to_symbol:
@@ -1505,10 +1504,6 @@ def day_by_day_summary(root_path='./', start_date=None, end_date=None):
         df_summary = _add_column(twab_more, df_summary, 'more')
         for collat_addr, twab_collat in twab_collat_by_token.items():
             df_summary = _add_column(twab_collat, df_summary, f'{address_to_symbol[collat_addr]}_in_vault')
-        if 'smore' in df_summary.index:
-            raise
-        if 'collat' in df_summary.index:
-            raise
         
         print('checking rebase token')
         twab_rebase_by_token, _ = getAllRebaseEvents(

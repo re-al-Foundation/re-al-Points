@@ -26,7 +26,6 @@ REAL_RPC_ENDPOINT = 'https://real.drpc.org'
 W3 = Web3(Web3.HTTPProvider(REAL_RPC_ENDPOINT, request_kwargs={'timeout': 10}))
 
 NULL_ADDR = '0x0000000000000000000000000000000000000000'
-DEFAULT_MULTILIER = 2
 LEVERAGE_MULTIPLIER = {
     contracts['ukre'].address: 5,
     contracts['arcusd'].address: 4,
@@ -1295,6 +1294,7 @@ def get_daily_snapshot_for_reeth(points_owner_addresses, snap_ts, df_eth_price):
     return wtd_reeth_value
 
 def get_refering():
+    i = 1
     while True:
         try:
             res = requests.get('https://api.tangible.store/points/wallets').json()
@@ -1302,7 +1302,6 @@ def get_refering():
                 print(res)
                 print('no dataWallets, retrying')
                 continue
-            # json.dump(res, open(f'refering_{dt.datetime.now(dt.timezone.utc).date()}.json', 'w'))
             ref_res = {}
             for user_info in res['dataWallets']:
                 if 'usedWalletAddress' not in user_info:
@@ -1310,12 +1309,12 @@ def get_refering():
                 if user_info['usedWalletAddress'] != '':
                     ref_res[user_info['walletAddress']] = user_info['usedWalletAddress']
             ref_res = {user_info['walletAddress']:user_info['usedWalletAddress'] for user_info in res['dataWallets'] if user_info['usedWalletAddress'] != ''}
-            print(ref_res)
             return ref_res
         except Exception as e:
             print(e)
-            print('retrying')
-        time.sleep(10)
+            print(f'retrying in {10*i} seconds')
+        time.sleep(10*i)
+        i += 1
 
 def refering_points(pts, ref):
     # ref = get_refering()
@@ -1325,8 +1324,8 @@ def refering_points(pts, ref):
         val = weighted_avg[addr]
         from_addr = addr
         while from_addr in ref and ref[from_addr] != NULL_ADDR:
-            print(f'refering transfer {val} from {from_addr} to {ref[from_addr]}')
             val /= 9
+            print(f'refering transfer {val} from {from_addr} to {ref[from_addr]}')            
             if val < 0.01:
                 break
             refer_pts[ref[from_addr]] += val
@@ -1466,11 +1465,10 @@ def day_by_day_summary(root_path='./', start_date=None, end_date=None):
         pickle.dump(gauges_by_pool, open(gauge_path+f'/{next_date_str}.pkl', 'wb'))
         
         print('checking lp_farm')
-        twab_in_nft_by_token, twab_in_nft_by_pool, _ = averageTokenInLPNFT(
+        twab_in_nft_by_token, _, _ = averageTokenInLPNFT(
             from_ts, to_ts, blk_after_from, blk_before_to, blk_ts_after_from, blk_ts_before_to,
             df_swap_by_address, df_token_price_by_blk, pool_ranges_by_address=pearl_pools, tokens_to_track=None, gauge_by_address=gauges_by_pool
         )
-        print(twab_in_nft_by_pool)
 
         for token_addr, twab_in_nfts in twab_in_nft_by_token.items():
             if token_addr not in address_to_symbol:
@@ -1506,10 +1504,6 @@ def day_by_day_summary(root_path='./', start_date=None, end_date=None):
         df_summary = _add_column(twab_more, df_summary, 'more')
         for collat_addr, twab_collat in twab_collat_by_token.items():
             df_summary = _add_column(twab_collat, df_summary, f'{address_to_symbol[collat_addr]}_in_vault')
-        if 'smore' in df_summary.index:
-            raise
-        if 'collat' in df_summary.index:
-            raise
         
         print('checking rebase token')
         twab_rebase_by_token, _ = getAllRebaseEvents(
@@ -1662,7 +1656,7 @@ def day_by_day_summary(root_path='./', start_date=None, end_date=None):
             df_summary['daily_norm_pts'] = _tvl_pcnt * df_summary['daily_norm_tvl'] + _swp_pcnt * df_summary['daily_norm_swp']
             df_summary['raw_points'] = df_summary['daily_norm_pts'] * daily_rwa_token * 1000 * 0.9
             df_summary['points_ref_adj'] = refering_points(df_summary['raw_points'], latest_ref)
-            df_summary.to_csv(report_path+f'/daily_summary_v2_{date_str}.csv')
+            df_summary.to_csv(report_path+f'/daily_summary_{date_str}.csv')
 
             total_rwd_val = daily_rwa_token * _tvl_pcnt * 0.9 * df_token_price_by_blk[contracts['rwa'].address].px.iloc[-1] * 365
             
@@ -1683,7 +1677,7 @@ def day_by_day_summary(root_path='./', start_date=None, end_date=None):
             df_by_pool.twab = df_by_pool.twab.astype(float)
 
             apy_by_pool = df_by_pool.adj_twab / df_by_pool.twab * total_rwd_val / df_summary['tvl_pts'].sum() * 1e18
-            apy_by_pool.to_csv(report_path+f'/apy_by_pool_v2_{date_str}.csv')
+            apy_by_pool.to_csv(report_path+f'/apy_by_pool_{date_str}.csv')
 
 if __name__ == '__main__':
 
