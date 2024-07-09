@@ -2,6 +2,4 @@
 /__pycache__
 /.venv
 /update_referring.py
-/airdrop_v3.py
-/daily.log
-/daily_submit.py
+/daily*

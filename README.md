@@ -5,6 +5,8 @@ example:
 
 Use airdrop_v2 after 2024-07-04
 
+Use airdrop_v3 after 2024-07-08
+
 Daily reports saved in ./daily_reports/rwa/daily_summary_{date}.csv
 
 Tracking Tokens:
