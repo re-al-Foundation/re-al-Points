@@ -9,10 +9,12 @@ Use airdrop_v3 after 2024-07-08
 
 Use airdrop_v4 after 2024-07-10
 
+Use airdrop_v5 after 2024-07-19
+
 Daily reports saved in ./daily_reports/rwa/daily_summary_{date}.csv
 
 Tracking Tokens:
-    reETH/wreETH, USTB, CVR, sCVR, PEARL, RWA, MORE, DAI, sMORE, arcUSD, PTa, UKRE
+    reETH/wreETH, USTB, CVR, sCVR, PEARL, RWA, MORE, DAI, sMORE, arcUSD, PTa, UKRE, USDC, USDR
   
 Tracking Contract:
   - Pearl Pools:
